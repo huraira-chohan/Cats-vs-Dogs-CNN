@@ -16,6 +16,25 @@ from keras.src.backend import image
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import os
+from PIL import Image
+
+def remove_corrupt_images(base_dir='PetImages'):
+    removed = 0
+    for root, _, files in os.walk(base_dir):
+        for file in files:
+            if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                path = os.path.join(root, file)
+                try:
+                    img = Image.open(path)
+                    img.verify()
+                except Exception:
+                    print(f"Removing corrupt: {path}")
+                    os.remove(path)
+                    removed += 1
+    print(f"Removed {removed} corrupt images.")
+
+remove_corrupt_images()
 
 data = ImageDataGenerator(
     rescale = 1./255, # this will only change the brightness of the pixel
@@ -66,9 +85,10 @@ model.summary()
 
 model.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
 
-history = model.fit(train_generator,epochs=13,validation_data=val_generator)
+history = model.fit(train_generator,epochs=5,validation_data=val_generator)
 
-model.save('Cats-vs-Dogs-CNN')
+import joblib
+joblib.dump(model, 'cats-vs-dogs.pkl')
 
 import matplotlib.pyplot as plt
 
@@ -101,6 +121,6 @@ def predict(path):
         print(f"CAT → {(1-p)*100:.1f}%")
 
 # Use it with just one line each:
-predict("cat.jpg")
-predict("dog.jpg")
-predict("my_photo.jpg")
+# predict("cat.jpg")
+# predict("dog.jpg")
+# predict("my_photo.jpg")
