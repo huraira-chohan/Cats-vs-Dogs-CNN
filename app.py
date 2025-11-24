@@ -1,59 +1,53 @@
 import streamlit as st
-import joblib
 import numpy as np
 from PIL import Image
+import joblib
+import os
+import urllib.request
+import ssl
 
-# ------------------- Config -------------------
-st.set_page_config(
-    page_title="Cat vs Dog Classifier",
-    page_icon="dog",
-    layout="centered"
-)
+# Allow unverified SSL (needed on Streamlit Cloud sometimes)
+ssl._create_default_https_context = ssl._create_unverified_context
 
-# ------------------- Title -------------------
-st.title("Cat vs Dog Classifier")
-st.markdown("Upload a photo of a cat or dog and I'll tell you which one it is!")
+# Direct download link from your release (right-click the file in Releases → Copy link address)
+MODEL_URL = "https://github.com/huraira-chohan/Cats-vs-Dogs-CNN/releases/download/v1.0/cats-vs-dogs.pkl"
+MODEL_PATH = "cats-vs-dogs.pkl"
 
-# ------------------- Load Model -------------------
 @st.cache_resource
-def load_model():
-    return joblib.load("cats-vs-dogs.pkl")
+def download_model():
+    if not os.path.exists(MODEL_PATH):
+        with st.spinner("First run: downloading 508 MB model… (takes ~90 seconds)"):
+            urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+    return joblib.load(MODEL_PATH)
 
-model = load_model()
+# Load model
+model = download_model()
 
-# ------------------- Prediction Function -------------------
-def predict(image: Image.Image):
-    img = image.convert("RGB").resize((224, 224))
-    arr = np.array(img) / 255.0
-    arr = arr.reshape(1, 224, 224, 3)
+# UI
+st.set_page_config(page_title="Cat vs Dog", page_icon="dog", layout="centered")
+st.title("Cat vs Dog Classifier")
+st.caption("Trained on 25k images · 508 MB model · Works instantly after first load")
 
-    prob_dog = model.predict(arr, verbose=0)[0][0]
+def predict(img):
+    img = img.convert("RGB").resize((224, 224))
+    x = np.array(img) / 255.0
+    x = np.expand_dims(x, axis=0)
+    prob = model.predict(x, verbose=0)[0][0]
+    return ("DOG", prob * 100) if prob > 0.5 else ("CAT", (1 - prob) * 100)
 
-    if prob_dog > 0.5:
-        return "DOG", prob_dog * 100
-    else:
-        return "CAT", (1 - prob_dog) * 100
+uploaded = st.file_uploader("Upload a cat or dog photo", type=["jpg", "jpeg", "png", "webp"])
 
-# ------------------- UI -------------------
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png", "webp"])
-
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Your image", use_column_width=True)
-
-    with st.spinner("Analyzing..."):
+if uploaded:
+    image = Image.open(uploaded)
+    st.image(image, use_column_width=True)
+    with st.spinner("Predicting..."):
         label, confidence = predict(image)
-
-    st.markdown(f"## It's a **{label}**!")
+    st.success(f"It's a **{label}**!")
     st.progress(confidence / 100)
     st.write(f"**Confidence: {confidence:.1f}%**")
-
-    # Fun emoji
     if label == "DOG":
         st.balloons()
     else:
         st.snow()
-
-# ------------------- Footer -------------------
-st.markdown("---")
-st.caption("Trained on 25,000 cat & dog images • Simple CNN • Made with ❤️ & Streamlit")
+else:
+    st.info("Upload an image to get started!")
