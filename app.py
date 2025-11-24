@@ -14,7 +14,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # MODEL_URL = "https://github.com/huraira-chohan/Cats-vs-Dogs-CNN/releases/download/v1.0/cats-vs-dogs.pkl"
 
 # NEW → WORKING 100%
-MODEL_URL = "https://ghproxy.com/https://github.com/huraira-chohan/Cats-vs-Dogs-CNN/releases/download/v1.0/cats-vs-dogs.pkl"
+MODEL_URL = "https://drive.google.com/uc?export=download&id=1fKjPIAMQsx-D21I2xrO6hm2rb39EBttX"
 MODEL_PATH = "cats-vs-dogs.pkl"
 
 @st.cache_resource
@@ -55,4 +55,5 @@ if uploaded:
         st.snow()
 else:
     st.info("Upload an image to get started!")
+
 
